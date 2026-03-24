@@ -1,20 +1,34 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import "../style/home.scss"
 import { useInterview } from '../hooks/useInterview.js'
 import { useNavigate } from 'react-router'
 
 const Home = () => {
 
-    const { loading, generateReport,reports } = useInterview()
     const [ jobDescription, setJobDescription ] = useState("")
     const [ selfDescription, setSelfDescription ] = useState("")
+    const [resumeFileName, setResumeFileName] = useState(null)
     const resumeInputRef = useRef()
+
+    const { loading, generateReport, reports, getReports } = useInterview()
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        getReports()
+    }, [])
 
     const navigate = useNavigate()
 
     const handleGenerateReport = async () => {
         const resumeFile = resumeInputRef.current.files[ 0 ]
+
+        if (!resumeFile && !selfDescription.trim()) {
+                alert("Please upload a resume or enter a self description.")
+                return
+    }
+
         const data = await generateReport({ jobDescription, selfDescription, resumeFile })
+        if (!data) return
         navigate(`/interview/${data._id}`)
     }
 
@@ -81,8 +95,25 @@ const Home = () => {
                                 </span>
                                 <p className='dropzone__title'>Click to upload or drag &amp; drop</p>
                                 <p className='dropzone__subtitle'>PDF or DOCX (Max 5MB)</p>
-                                <input ref={resumeInputRef} hidden type='file' id='resume' name='resume' accept='.pdf,.docx' />
+                                <input ref={resumeInputRef} hidden type='file' id='resume' name='resume' accept='.pdf,.docx' onChange={(e) => setResumeFileName(e.target.files[0]?.name || null)} />
                             </label>
+
+                            {resumeFileName ? (
+                                <div style={{ 
+                                    marginTop: "8px", 
+                                    display: "flex", 
+                                    alignItems: "center", 
+                                    gap: "6px",
+                                    color: "#4ade80",
+                                    fontSize: "14px"
+                                }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    {resumeFileName}
+                                </div>
+                            ) : null}
+
                         </div>
 
                         {/* OR Divider */}

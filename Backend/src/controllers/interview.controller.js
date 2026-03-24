@@ -2,37 +2,77 @@ const pdfParse = require("pdf-parse")
 const { generateInterviewReport, generateResumePdf } = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
 
+// async function generateInterViewReportController(req, res) {
 
+//     const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(req.file.buffer))).getText()
+//     const { selfDescription, jobDescription } = req.body
 
+//     const interViewReportByAi = await generateInterviewReport({
+//         resume: resumeContent.text,
+//         selfDescription,
+//         jobDescription
+//     })
+
+//     const interviewReport = await interviewReportModel.create({
+//         user: req.user.id,
+//         resume: resumeContent.text,
+//         selfDescription,
+//         jobDescription,
+//         ...interViewReportByAi
+//     })
+
+//     res.status(201).json({
+//         message: "Interview report generated successfully.",
+//         interviewReport
+//     })
+
+// }
 
 /**
  * @description Controller to generate interview report based on user self description, resume and job description.
  */
+
 async function generateInterViewReportController(req, res) {
+    try {
 
-    const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(req.file.buffer))).getText()
-    const { selfDescription, jobDescription } = req.body
 
-    const interViewReportByAi = await generateInterviewReport({
-        resume: resumeContent.text,
-        selfDescription,
-        jobDescription
-    })
+        if (!req.file && !req.body.selfDescription) {
+            return res.status(400).json({ message: "Resume or self description is required." })
+        }
+        // const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(req.file.buffer))).getText()
+        let resumeText = ""
+        if (req.file) {
+            const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(req.file.buffer))).getText()
+            resumeText = resumeContent.text
+        }
+        const { selfDescription, jobDescription } = req.body
 
-    const interviewReport = await interviewReportModel.create({
-        user: req.user.id,
-        resume: resumeContent.text,
-        selfDescription,
-        jobDescription,
-        ...interViewReportByAi
-    })
+        const interViewReportByAi = await generateInterviewReport({
+            resume: resumeText,
+            selfDescription,
+            jobDescription
+        })
 
-    res.status(201).json({
-        message: "Interview report generated successfully.",
-        interviewReport
-    })
+        const interviewReport = await interviewReportModel.create({
+            user: req.user.id,
+            resume: resumeText,
+            selfDescription,
+            jobDescription,
+            ...interViewReportByAi
+        })
 
+        res.status(201).json({
+            message: "Interview report generated successfully.",
+            interviewReport
+        })
+    } catch (error) {
+        console.error("🔴 FULL ERROR:", error) // 👈 add this
+        res.status(500).json({ message: error.message })
+    }
 }
+
+
+
 
 /**
  * @description Controller to get interview report by interviewId.
