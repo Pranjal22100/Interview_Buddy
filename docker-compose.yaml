@@ -1,0 +1,33 @@
+services:
+
+  # Backend service
+  backend:
+    build:
+      context: ./Backend        # Where to find the Dockerfile
+      dockerfile: Dockerfile
+    container_name: interview-backend
+    ports:
+      - "${PORT}:${PORT}"             # host:container — maps your machine's 3000 to container's 3000
+    environment:
+      # Why: Pass environment variables into the container
+      # Never hardcode secrets in Dockerfile
+      - MONGO_URI=${MONGO_URI}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      # Why: Sync code changes without rebuilding (for development)
+      - ./Backend:/app
+      - /app/node_modules       # Why: Keep container's node_modules, don't overwrite with host's
+    restart: unless-stopped     # Why: Auto restart if container crashes
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: interview-frontend
+    ports:
+      - "80:80"                 # Serve frontend on port 80 (http://localhost)
+    depends_on:
+      - backend                 # Why: Don't start frontend until backend is ready
+    restart: unless-stopped
