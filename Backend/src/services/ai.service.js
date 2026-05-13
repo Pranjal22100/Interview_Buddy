@@ -65,34 +65,44 @@ async function generateQuestionsAndSummary({ resume, selfDescription, jobDescrip
 }
 
 async function generateDetailedAnswer({ question, intention, type, context }) {
-    const prompt = `Provide an extremely detailed and structured answer for the following interview question:
-        Question: ${question}
-        Intention: ${intention}
-        Type: ${type} (Technical/Behavioral)
-        Context (Resume & Job Description): ${context}
+    let lastError;
+    for (let i = 0; i < 3; i++) {
+        try {
+            const prompt = `Provide an extremely detailed and structured answer for the following interview question:
+                Question: ${question}
+                Intention: ${intention}
+                Type: ${type} (Technical/Behavioral)
+                Context (Resume & Job Description): ${context}
 
-        Follow the "Question Card" structure strictly:
-        - Quick Answer: Short and punchy.
-        - Detailed Explanation: Comprehensive and deep.
-        - Workflow Diagram: Explain the flow or step-by-step process.
-        - Jargons: List relevant technical terms.
-        - Code Snippet: Provide high-quality code (for technical) or STAR method structure (for behavioral).
-        - Advantages & Limitations: Pros and cons.
-        - Comparison: How it differs from other solutions.
-        - Best Practices: What professionals do.
-        - Follow-up Questions: What's next?
+                Follow the "Question Card" structure strictly:
+                - Quick Answer: Short and punchy.
+                - Detailed Explanation: Comprehensive and deep.
+                - Workflow Diagram: Explain the flow or step-by-step process.
+                - Jargons: List relevant technical terms.
+                - Code Snippet: Provide high-quality code (for technical) or STAR method structure (for behavioral).
+                - Advantages & Limitations: Pros and cons.
+                - Comparison: How it differs from other solutions.
+                - Best Practices: What professionals do.
+                - Follow-up Questions: What's next?
 
-        Respond ONLY with a valid JSON object matching this schema:
-        ${JSON.stringify(zodToJsonSchema(detailedAnswerSchema), null, 2)}
-    `
+                Respond ONLY with a valid JSON object matching this schema:
+                ${JSON.stringify(zodToJsonSchema(detailedAnswerSchema), null, 2)}
+            `
 
-    const response = await groq.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" }
-    })
+            const response = await groq.chat.completions.create({
+                model: "llama-3.3-70b-versatile",
+                messages: [{ role: "user", content: prompt }],
+                response_format: { type: "json_object" }
+            })
 
-    return JSON.parse(response.choices[0].message.content)
+            return JSON.parse(response.choices[0].message.content)
+        } catch (error) {
+            lastError = error;
+            console.warn(`Attempt ${i + 1} failed for: ${question.substring(0, 30)}... Retrying in 2s.`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    }
+    throw lastError;
 }
 
 

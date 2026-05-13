@@ -56,8 +56,9 @@ async function generateInterViewReportController(req, res) {
 
         const context = `Resume: ${resumeText}\nSelf Description: ${selfDescription}\nJob Description: ${jobDescription}`
 
-        // Step 2: Generate Detailed Answers for each question in parallel
-        const technicalDetailedPromises = summary.technicalQuestions.map(async (q) => {
+        // Step 2: Generate Detailed Answers for each question sequentially to avoid rate limits
+        const technicalQuestionsDetailed = []
+        for (const q of summary.technicalQuestions) {
             try {
                 const details = await generateDetailedAnswer({
                     question: q.question,
@@ -65,14 +66,17 @@ async function generateInterViewReportController(req, res) {
                     type: "technical",
                     context
                 })
-                return { ...q, ...details }
+                technicalQuestionsDetailed.push({ ...q, ...details })
+                // Small delay to respect rate limits
+                await new Promise(resolve => setTimeout(resolve, 500))
             } catch (error) {
-                console.error(`Error generating details for technical question: ${q.question}`, error)
-                return { ...q, quickAnswer: "Content generation failed for this section.", detailedExplanation: "Please try again later or generate a new report." }
+                console.error(`Failed technical question: ${q.question}`, error)
+                technicalQuestionsDetailed.push({ ...q, quickAnswer: "Failed to generate.", detailedExplanation: "Rate limit or API error. Try refreshing." })
             }
-        })
+        }
 
-        const behavioralDetailedPromises = summary.behavioralQuestions.map(async (q) => {
+        const behavioralQuestionsDetailed = []
+        for (const q of summary.behavioralQuestions) {
             try {
                 const details = await generateDetailedAnswer({
                     question: q.question,
@@ -80,17 +84,14 @@ async function generateInterViewReportController(req, res) {
                     type: "behavioral",
                     context
                 })
-                return { ...q, ...details }
+                behavioralQuestionsDetailed.push({ ...q, ...details })
+                // Small delay to respect rate limits
+                await new Promise(resolve => setTimeout(resolve, 500))
             } catch (error) {
-                console.error(`Error generating details for behavioral question: ${q.question}`, error)
-                return { ...q, quickAnswer: "Content generation failed for this section.", detailedExplanation: "Please try again later or generate a new report." }
+                console.error(`Failed behavioral question: ${q.question}`, error)
+                behavioralQuestionsDetailed.push({ ...q, quickAnswer: "Failed to generate.", detailedExplanation: "Rate limit or API error. Try refreshing." })
             }
-        })
-
-        const [ technicalQuestionsDetailed, behavioralQuestionsDetailed ] = await Promise.all([
-            Promise.all(technicalDetailedPromises),
-            Promise.all(behavioralDetailedPromises)
-        ])
+        }
 
         // Step 3: Create the final report
         const interviewReport = await interviewReportModel.create({
