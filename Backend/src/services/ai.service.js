@@ -38,8 +38,11 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
         Self Description: ${selfDescription}
         Job Description: ${jobDescription}
 
-        For technical questions, provide detailed, in-depth answers with step-by-step reasoning and examples if possible.
-        For behavioral questions, include at least one real-world example or scenario in the answer.
+        For technical questions, generate exactly 3 questions. For each, provide a detailed, in-depth answer with step-by-step reasoning and examples.
+        For behavioral questions, generate exactly 3 questions. For each, include at least one real-world example or scenario in the answer.
+        The number of questions must not be less than 3 for each section.
+
+        Keep the logic and calculation for match score and skill gaps consistent with previous reports. Do not change the way these are determined; only increase the length and detail of the answers.
 
         Respond ONLY with a valid JSON object matching this schema:
         ${JSON.stringify(zodToJsonSchema(interviewReportSchema), null, 2)}
