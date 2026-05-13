@@ -12,7 +12,8 @@ const technicalQuestionSchema = new mongoose.Schema({
     },
     answer: {
         type: String,
-        required: [ true, "Answer is required" ]
+        required: [ true, "Answer is required" ],
+        maxlength: 5000 // Increased to allow detailed answers
     }
 }, {
     _id: false
@@ -29,7 +30,8 @@ const behavioralQuestionSchema = new mongoose.Schema({
     },
     answer: {
         type: String,
-        required: [ true, "Answer is required" ]
+        required: [ true, "Answer is required" ],
+        maxlength: 5000 // Increased to allow detailed answers and examples
     }
 }, {
     _id: false

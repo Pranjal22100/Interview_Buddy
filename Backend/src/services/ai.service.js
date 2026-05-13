@@ -34,15 +34,18 @@ const interviewReportSchema = z.object({
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
 
     const prompt = `Generate an interview report for a candidate with the following details:
-                        Resume: ${resume}
-                        Self Description: ${selfDescription}
-                        Job Description: ${jobDescription}
+        Resume: ${resume}
+        Self Description: ${selfDescription}
+        Job Description: ${jobDescription}
 
-                        Respond ONLY with a valid JSON object matching this schema:
-                        ${JSON.stringify(zodToJsonSchema(interviewReportSchema), null, 2)}
+        For technical questions, provide detailed, in-depth answers with step-by-step reasoning and examples if possible.
+        For behavioral questions, include at least one real-world example or scenario in the answer.
 
-                        Do not include any explanation or markdown, just the raw JSON.
-                    `
+        Respond ONLY with a valid JSON object matching this schema:
+        ${JSON.stringify(zodToJsonSchema(interviewReportSchema), null, 2)}
+
+        Do not include any explanation or markdown, just the raw JSON.
+    `
 
     const response = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
