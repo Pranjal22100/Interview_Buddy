@@ -127,7 +127,15 @@ const interviewReportSchema = new mongoose.Schema({
     title: {
         type: String,
         required: [ true, "Job title is required" ]
-    }
+    },
+    chatQuestions: [ technicalQuestionSchema ],
+    chatHistory: [
+        {
+            role: { type: String, enum: [ "user", "assistant" ] },
+            content: { type: String },
+            timestamp: { type: Date, default: Date.now }
+        }
+    ]
 }, {
     timestamps: true
 })

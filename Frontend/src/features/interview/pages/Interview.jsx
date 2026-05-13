@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import '../style/interview.scss'
 import { useInterview } from '../hooks/useInterview.js'
 import { useParams } from 'react-router'
+import { sendChatMessage } from '../services/interview.api'
 
 
 
@@ -9,6 +10,7 @@ const NAV_ITEMS = [
     { id: 'technical', label: 'Technical Questions', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>) },
     { id: 'behavioral', label: 'Behavioral Questions', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>) },
     { id: 'roadmap', label: 'Road Map', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>) },
+    { id: 'chat', label: 'AI Tutor Chat', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M8 9h8" /><path d="M8 13h6" /></svg>) },
 ]
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -124,8 +126,40 @@ const RoadMapDay = ({ day }) => (
 // ── Main Component ────────────────────────────────────────────────────────────
 const Interview = () => {
     const [ activeNav, setActiveNav ] = useState('technical')
-    const { report, getReportById, loading, getResumePdf } = useInterview()
+    const { report, getReportById, loading, getResumePdf, setReport } = useInterview()
     const { interviewId } = useParams()
+    const [ chatMessage, setChatMessage ] = useState("")
+    const [ chatLoading, setChatLoading ] = useState(false)
+    const chatEndRef = React.useRef(null)
+
+    const scrollToBottom = () => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
+
+    useEffect(() => {
+        scrollToBottom()
+    }, [ report?.chatHistory ])
+
+    const handleSendMessage = async (e) => {
+        e.preventDefault()
+        if (!chatMessage.trim()) return
+
+        setChatLoading(true)
+        try {
+            const data = await sendChatMessage(interviewId, chatMessage)
+            setReport(prev => ({
+                ...prev,
+                chatHistory: data.chatHistory,
+                chatQuestions: [ ...prev.chatQuestions, ...data.chatQuestions ]
+            }))
+            setChatMessage("")
+        } catch (error) {
+            console.error("Chat error:", error)
+            alert("Chat failed. Please try again.")
+        } finally {
+            setChatLoading(false)
+        }
+    }
 
     useEffect(() => {
         if (interviewId) {
@@ -218,6 +252,56 @@ const Interview = () => {
                                     <RoadMapDay key={day.day} day={day} />
                                 ))}
                             </div>
+                        </section>
+                    )}
+
+                    {activeNav === 'chat' && (
+                        <section className="chat-section">
+                            <div className='content-header'>
+                                <h2>AI Tutor Chat</h2>
+                                <p className="subtitle">Request specific questions or refine topics.</p>
+                            </div>
+
+                            <div className="chat-container">
+                                <div className="chat-messages">
+                                    {report.chatHistory?.length === 0 && (
+                                        <div className="chat-empty">
+                                            <p>Ask for questions on specific topics like "Advanced React" or "Leadership scenarios".</p>
+                                        </div>
+                                    )}
+                                    {report.chatHistory?.map((msg, i) => (
+                                        <div key={i} className={`chat-bubble chat-bubble--${msg.role}`}>
+                                            <div className="chat-bubble__content">{msg.content}</div>
+                                        </div>
+                                    ))}
+                                    {chatLoading && <div className="chat-bubble chat-bubble--assistant loading-dots">Thinking...</div>}
+                                    <div ref={chatEndRef} />
+                                </div>
+
+                                <form className="chat-input-area" onSubmit={handleSendMessage}>
+                                    <input
+                                        type="text"
+                                        placeholder="Type your request here..."
+                                        value={chatMessage}
+                                        onChange={(e) => setChatMessage(e.target.value)}
+                                        disabled={chatLoading}
+                                    />
+                                    <button type="submit" disabled={chatLoading || !chatMessage.trim()}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                                    </button>
+                                </form>
+                            </div>
+
+                            {report.chatQuestions?.length > 0 && (
+                                <div className="chat-questions-list">
+                                    <h3>Custom Practice Questions</h3>
+                                    <div className='q-list'>
+                                        {report.chatQuestions.map((q, i) => (
+                                            <QuestionCard key={i} item={q} index={i} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </section>
                     )}
                 </main>

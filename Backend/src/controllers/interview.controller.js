@@ -1,5 +1,5 @@
 const pdfParse = require("pdf-parse")
-const { generateQuestionsAndSummary, generateDetailedAnswer, generateResumePdf } = require("../services/ai.service")
+const { generateQuestionsAndSummary, generateDetailedAnswer, generateResumePdf, refineChatTopic, generateChatQuestions } = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
 
 // async function generateInterViewReportController(req, res) {
@@ -178,4 +178,51 @@ async function generateResumePdfController(req, res) {
     res.send(pdfBuffer)
 }
 
-module.exports = { generateInterViewReportController, getInterviewReportByIdController, getAllInterviewReportsController, generateResumePdfController }
+async function handleChatController(req, res) {
+    try {
+        const { interviewId } = req.params
+        const { message } = req.body
+
+        const report = await interviewReportModel.findOne({ _id: interviewId, user: req.user.id })
+        if (!report) return res.status(404).json({ message: "Report not found" })
+
+        const context = `Resume: ${report.resume}\nJob: ${report.jobDescription}`
+        
+        // 1. Refine topic
+        const refinement = await refineChatTopic({
+            userMessage: message,
+            chatHistory: report.chatHistory,
+            context
+        })
+
+        let newQuestions = []
+        if (refinement.isConfirmed && refinement.refinedTopic) {
+            // 2. Generate questions if confirmed
+            newQuestions = await generateChatQuestions({
+                topic: refinement.refinedTopic,
+                context
+            })
+            
+            // Add new questions to report
+            report.chatQuestions.push(...newQuestions)
+        }
+
+        // Update history
+        report.chatHistory.push({ role: "user", content: message })
+        report.chatHistory.push({ role: "assistant", content: refinement.message })
+        
+        await report.save()
+
+        res.status(200).json({
+            refinement,
+            chatQuestions: newQuestions,
+            chatHistory: report.chatHistory
+        })
+
+    } catch (error) {
+        console.error("Chat error:", error)
+        res.status(500).json({ message: error.message })
+    }
+}
+
+module.exports = { generateInterViewReportController, getInterviewReportByIdController, getAllInterviewReportsController, generateResumePdfController, handleChatController }

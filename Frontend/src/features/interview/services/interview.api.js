@@ -58,3 +58,12 @@ export const generateResumePdf = async ({ interviewReportId }) => {
 
     return response.data
 }
+
+
+/**
+ * @description Service to send chat message for refinement or generation.
+ */
+export const sendChatMessage = async (interviewId, message) => {
+    const response = await api.post(`/api/interview/chat/${interviewId}`, { message })
+    return response.data
+}

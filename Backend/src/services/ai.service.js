@@ -149,4 +149,65 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
     return pdfBuffer
 }
 
-module.exports = { generateQuestionsAndSummary, generateDetailedAnswer, generateResumePdf }
+const chatRefinementSchema = z.object({
+    isConfirmed: z.boolean().describe("True if the user has explicitly confirmed a specific topic, false if we are still suggesting/refining"),
+    refinedTopic: z.string().optional().describe("The specific topic proposed for confirmation"),
+    message: z.string().describe("The conversational response to the user"),
+    suggestedTopics: z.array(z.string()).optional().describe("A few alternative topics if the user said no")
+})
+
+async function refineChatTopic({ userMessage, chatHistory, context }) {
+    const prompt = `You are an interview coach. The user wants to practice specific questions.
+        Context (Resume & JD): ${context}
+        Chat History: ${JSON.stringify(chatHistory)}
+        Latest User Message: ${userMessage}
+
+        Your goal:
+        1. If the user's request is broad, suggest a specific, high-value topic related to the job.
+        2. If the user rejects a suggestion, apologize and suggest something different based on their feedback.
+        3. If the user confirms a topic (e.g., "Yes", "That sounds good", "Exactly"), set isConfirmed to true.
+
+        Respond ONLY with a valid JSON object matching this schema:
+        ${JSON.stringify(zodToJsonSchema(chatRefinementSchema), null, 2)}
+    `
+
+    const response = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" }
+    })
+
+    return JSON.parse(response.choices[0].message.content)
+}
+
+async function generateChatQuestions({ topic, context }) {
+    // We want 3 questions for the confirmed topic
+    const questionsPrompt = `Generate exactly 3 technical or behavioral questions for the topic: "${topic}".
+        Context: ${context}
+        Respond with a JSON object containing a "questions" array, where each item has "question" and "intention".
+    `
+    const questionsResponse = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: questionsPrompt }],
+        response_format: { type: "json_object" }
+    })
+
+    const { questions } = JSON.parse(questionsResponse.choices[0].message.content)
+    
+    // Now generate detailed "Question Card" content for each sequentially
+    const detailedQuestions = []
+    for (const q of questions) {
+        const details = await generateDetailedAnswer({
+            question: q.question,
+            intention: q.intention,
+            type: "technical", // default to technical for chat
+            context
+        })
+        detailedQuestions.push({ ...q, ...details })
+        await new Promise(resolve => setTimeout(resolve, 500))
+    }
+
+    return detailedQuestions
+}
+
+module.exports = { generateQuestionsAndSummary, generateDetailedAnswer, generateResumePdf, refineChatTopic, generateChatQuestions }
