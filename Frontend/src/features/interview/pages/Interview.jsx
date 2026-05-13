@@ -29,10 +29,75 @@ const QuestionCard = ({ item, index }) => {
                         <span className='q-card__tag q-card__tag--intention'>Intention</span>
                         <p>{item.intention}</p>
                     </div>
+                    
                     <div className='q-card__section'>
-                        <span className='q-card__tag q-card__tag--answer'>Model Answer</span>
-                        <p>{item.answer}</p>
+                        <span className='q-card__tag q-card__tag--answer'>Quick Answer</span>
+                        <p>{item.quickAnswer}</p>
                     </div>
+
+                    <div className='q-card__section'>
+                        <span className='q-card__tag q-card__tag--detailed'>Detailed Explanation</span>
+                        <p className="q-card__text">{item.detailedExplanation}</p>
+                    </div>
+
+                    {item.workflowDiagram && (
+                        <div className='q-card__section'>
+                            <span className='q-card__tag'>Workflow / Process</span>
+                            <pre className="q-card__pre">{item.workflowDiagram}</pre>
+                        </div>
+                    )}
+
+                    {item.codeSnippet && (
+                        <div className='q-card__section'>
+                            <span className='q-card__tag'>Code Snippet / Structure</span>
+                            <pre className="q-card__code"><code>{item.codeSnippet}</code></pre>
+                        </div>
+                    )}
+
+                    {item.jargons && item.jargons.length > 0 && (
+                        <div className='q-card__section'>
+                            <span className='q-card__tag'>Key Jargons</span>
+                            <div className="q-card__list-tags">
+                                {item.jargons.map((j, i) => <span key={i} className="jargon-tag">{j}</span>)}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="q-card__grid">
+                        {item.advantages && item.advantages.length > 0 && (
+                            <div className='q-card__section'>
+                                <span className='q-card__tag'>Advantages</span>
+                                <ul>{item.advantages.map((a, i) => <li key={i}>{a}</li>)}</ul>
+                            </div>
+                        )}
+                        {item.limitations && item.limitations.length > 0 && (
+                            <div className='q-card__section'>
+                                <span className='q-card__tag'>Limitations</span>
+                                <ul>{item.limitations.map((l, i) => <li key={i}>{l}</li>)}</ul>
+                            </div>
+                        )}
+                    </div>
+
+                    {item.comparison && (
+                        <div className='q-card__section'>
+                            <span className='q-card__tag'>Comparison</span>
+                            <p>{item.comparison}</p>
+                        </div>
+                    )}
+
+                    {item.bestPractices && item.bestPractices.length > 0 && (
+                        <div className='q-card__section'>
+                            <span className='q-card__tag'>Best Practices</span>
+                            <ul>{item.bestPractices.map((b, i) => <li key={i}>{b}</li>)}</ul>
+                        </div>
+                    )}
+
+                    {item.followUpQuestions && item.followUpQuestions.length > 0 && (
+                        <div className='q-card__section'>
+                            <span className='q-card__tag'>Follow-up Questions</span>
+                            <ul className="follow-up-list">{item.followUpQuestions.map((f, i) => <li key={i}>{f}</li>)}</ul>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

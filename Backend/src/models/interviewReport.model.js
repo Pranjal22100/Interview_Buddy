@@ -10,11 +10,28 @@ const technicalQuestionSchema = new mongoose.Schema({
         type: String,
         required: [ true, "Intention is required" ]
     },
-    answer: {
+    quickAnswer: {
         type: String,
-        required: [ true, "Answer is required" ],
-        maxlength: 5000 // Increased to allow detailed answers
-    }
+        required: [ true, "Quick Answer is required" ]
+    },
+    detailedExplanation: {
+        type: String,
+        required: [ true, "Detailed Explanation is required" ]
+    },
+    workflowDiagram: {
+        type: String,
+    },
+    jargons: [ { type: String } ],
+    codeSnippet: {
+        type: String,
+    },
+    advantages: [ { type: String } ],
+    limitations: [ { type: String } ],
+    comparison: {
+        type: String,
+    },
+    bestPractices: [ { type: String } ],
+    followUpQuestions: [ { type: String } ]
 }, {
     _id: false
 })
@@ -22,17 +39,34 @@ const technicalQuestionSchema = new mongoose.Schema({
 const behavioralQuestionSchema = new mongoose.Schema({
     question: {
         type: String,
-        required: [ true, "Technical question is required" ]
+        required: [ true, "Behavioral question is required" ]
     },
     intention: {
         type: String,
         required: [ true, "Intention is required" ]
     },
-    answer: {
+    quickAnswer: {
         type: String,
-        required: [ true, "Answer is required" ],
-        maxlength: 5000 // Increased to allow detailed answers and examples
-    }
+        required: [ true, "Quick Answer is required" ]
+    },
+    detailedExplanation: {
+        type: String,
+        required: [ true, "Detailed Explanation is required" ]
+    },
+    workflowDiagram: {
+        type: String,
+    },
+    jargons: [ { type: String } ],
+    codeSnippet: {
+        type: String,
+    },
+    advantages: [ { type: String } ],
+    limitations: [ { type: String } ],
+    comparison: {
+        type: String,
+    },
+    bestPractices: [ { type: String } ],
+    followUpQuestions: [ { type: String } ]
 }, {
     _id: false
 })

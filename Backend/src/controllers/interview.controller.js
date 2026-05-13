@@ -1,5 +1,5 @@
 const pdfParse = require("pdf-parse")
-const { generateInterviewReport, generateResumePdf } = require("../services/ai.service")
+const { generateQuestionsAndSummary, generateDetailedAnswer, generateResumePdf } = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
 
 // async function generateInterViewReportController(req, res) {
@@ -47,18 +47,50 @@ async function generateInterViewReportController(req, res) {
         }
         const { selfDescription, jobDescription } = req.body
 
-        const interViewReportByAi = await generateInterviewReport({
+        // Step 1: Generate Questions and Summary
+        const summary = await generateQuestionsAndSummary({
             resume: resumeText,
             selfDescription,
             jobDescription
         })
 
+        const context = `Resume: ${resumeText}\nSelf Description: ${selfDescription}\nJob Description: ${jobDescription}`
+
+        // Step 2: Generate Detailed Answers for each question in parallel
+        const technicalDetailedPromises = summary.technicalQuestions.map(async (q) => {
+            const details = await generateDetailedAnswer({
+                question: q.question,
+                intention: q.intention,
+                type: "technical",
+                context
+            })
+            return { ...q, ...details }
+        })
+
+        const behavioralDetailedPromises = summary.behavioralQuestions.map(async (q) => {
+            const details = await generateDetailedAnswer({
+                question: q.question,
+                intention: q.intention,
+                type: "behavioral",
+                context
+            })
+            return { ...q, ...details }
+        })
+
+        const [ technicalQuestionsDetailed, behavioralQuestionsDetailed ] = await Promise.all([
+            Promise.all(technicalDetailedPromises),
+            Promise.all(behavioralDetailedPromises)
+        ])
+
+        // Step 3: Create the final report
         const interviewReport = await interviewReportModel.create({
             user: req.user.id,
             resume: resumeText,
             selfDescription,
             jobDescription,
-            ...interViewReportByAi
+            ...summary,
+            technicalQuestions: technicalQuestionsDetailed,
+            behavioralQuestions: behavioralQuestionsDetailed
         })
 
         res.status(201).json({
