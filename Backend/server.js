@@ -7,6 +7,8 @@ const PORT = process.env.PORT || 3000
 connectToDB()
 
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`)
 })
+
+server.setTimeout(300000); // 5 minutes timeout

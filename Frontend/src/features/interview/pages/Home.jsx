@@ -28,7 +28,10 @@ const Home = () => {
     }
 
         const data = await generateReport({ jobDescription, selfDescription, resumeFile })
-        if (!data) return
+        if (!data) {
+            alert("Failed to generate interview strategy. The AI service might be busy or timed out. Please try again.")
+            return
+        }
         navigate(`/interview/${data._id}`)
     }
 

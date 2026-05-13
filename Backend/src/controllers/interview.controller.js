@@ -58,23 +58,33 @@ async function generateInterViewReportController(req, res) {
 
         // Step 2: Generate Detailed Answers for each question in parallel
         const technicalDetailedPromises = summary.technicalQuestions.map(async (q) => {
-            const details = await generateDetailedAnswer({
-                question: q.question,
-                intention: q.intention,
-                type: "technical",
-                context
-            })
-            return { ...q, ...details }
+            try {
+                const details = await generateDetailedAnswer({
+                    question: q.question,
+                    intention: q.intention,
+                    type: "technical",
+                    context
+                })
+                return { ...q, ...details }
+            } catch (error) {
+                console.error(`Error generating details for technical question: ${q.question}`, error)
+                return { ...q, quickAnswer: "Content generation failed for this section.", detailedExplanation: "Please try again later or generate a new report." }
+            }
         })
 
         const behavioralDetailedPromises = summary.behavioralQuestions.map(async (q) => {
-            const details = await generateDetailedAnswer({
-                question: q.question,
-                intention: q.intention,
-                type: "behavioral",
-                context
-            })
-            return { ...q, ...details }
+            try {
+                const details = await generateDetailedAnswer({
+                    question: q.question,
+                    intention: q.intention,
+                    type: "behavioral",
+                    context
+                })
+                return { ...q, ...details }
+            } catch (error) {
+                console.error(`Error generating details for behavioral question: ${q.question}`, error)
+                return { ...q, quickAnswer: "Content generation failed for this section.", detailedExplanation: "Please try again later or generate a new report." }
+            }
         })
 
         const [ technicalQuestionsDetailed, behavioralQuestionsDetailed ] = await Promise.all([
