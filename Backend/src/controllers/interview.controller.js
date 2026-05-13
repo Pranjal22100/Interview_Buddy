@@ -212,15 +212,24 @@ async function handleChatController(req, res) {
         }
 
         // Update history
-        report.chatHistory.push({ role: "user", content: message })
-        report.chatHistory.push({ role: "assistant", content: refinement.message })
-        
-        await report.save()
+        const updatedReport = await interviewReportModel.findOneAndUpdate(
+            { _id: interviewId },
+            { 
+                $push: { 
+                    chatHistory: [
+                        { role: "user", content: message },
+                        { role: "assistant", content: refinement.message }
+                    ],
+                    chatQuestions: { $each: newQuestions }
+                }
+            },
+            { new: true }
+        )
 
         res.status(200).json({
             refinement,
             chatQuestions: newQuestions,
-            chatHistory: report.chatHistory
+            chatHistory: updatedReport.chatHistory
         })
 
     } catch (error) {
