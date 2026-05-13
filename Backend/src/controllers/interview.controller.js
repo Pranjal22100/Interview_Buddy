@@ -186,6 +186,10 @@ async function handleChatController(req, res) {
         const report = await interviewReportModel.findOne({ _id: interviewId, user: req.user.id })
         if (!report) return res.status(404).json({ message: "Report not found" })
 
+        // Initialize fields for older reports
+        if (!report.chatQuestions) report.chatQuestions = [];
+        if (!report.chatHistory) report.chatHistory = [];
+
         const context = `Resume: ${report.resume}\nJob: ${report.jobDescription}`
         
         // 1. Refine topic

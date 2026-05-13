@@ -147,15 +147,18 @@ const Interview = () => {
         setChatLoading(true)
         try {
             const data = await sendChatMessage(interviewId, chatMessage)
+            console.log("Chat response:", data)
             setReport(prev => ({
                 ...prev,
-                chatHistory: data.chatHistory,
-                chatQuestions: [ ...prev.chatQuestions, ...data.chatQuestions ]
+                chatHistory: data.chatHistory || prev.chatHistory,
+                chatQuestions: data.chatQuestions?.length > 0 
+                    ? [ ...(prev.chatQuestions || []), ...data.chatQuestions ] 
+                    : (prev.chatQuestions || [])
             }))
             setChatMessage("")
         } catch (error) {
-            console.error("Chat error:", error)
-            alert("Chat failed. Please try again.")
+            console.error("Chat full error:", error.response?.data || error.message)
+            alert(`Chat failed: ${error.response?.data?.message || "Please try again."}`)
         } finally {
             setChatLoading(false)
         }
