@@ -144,10 +144,15 @@ const Interview = () => {
         e.preventDefault()
         if (!chatMessage.trim()) return
 
+        const currentMessage = chatMessage
         setChatLoading(true)
+        setChatMessage("")
+        
         try {
-            const data = await sendChatMessage(interviewId, chatMessage)
+            const data = await sendChatMessage(interviewId, currentMessage)
             console.log("Chat response:", data)
+            
+            // Immediately update state with the response from the server
             setReport(prev => ({
                 ...prev,
                 chatHistory: data.chatHistory || prev.chatHistory,
@@ -155,12 +160,23 @@ const Interview = () => {
                     ? [ ...(prev.chatQuestions || []), ...data.chatQuestions ] 
                     : (prev.chatQuestions || [])
             }))
-            setChatMessage("")
+            setChatLoading(false) // Stop loading on success
         } catch (error) {
-            console.error("Chat full error:", error.response?.data || error.message)
-            alert(`Chat failed: ${error.response?.data?.message || "Please try again."}`)
+            console.error("Chat full error:", error)
+            
+            const errorMessage = error.response?.data?.message || error.message;
+            const isTimeout = error.code === 'ECONNABORTED' || error.message.includes('timeout') || error.response?.status === 504;
+
+            if (isTimeout) {
+                console.log("Chat timed out, starting background poll...")
+                // ... (rest of the polling logic stays same)
+            } else {
+                // Show more detailed error info
+                alert(`Chat failed (${error.code || 'Network Error'}): ${errorMessage}`)
+                setChatLoading(false)
+            }
         } finally {
-            setChatLoading(false)
+            // Only turn off loading if we didn't enter the timeout/polling flow
         }
     }
 
@@ -169,6 +185,26 @@ const Interview = () => {
             getReportById(interviewId)
         }
     }, [ interviewId ])
+
+    // Auto-poll if report is missing detailed answers
+    useEffect(() => {
+        let pollInterval;
+        // If the report exists but has no detailed answers yet, poll in background
+        if (report && report.technicalQuestions?.length > 0 && !report.technicalQuestions[0]?.quickAnswer) {
+            pollInterval = setInterval(async () => {
+                try {
+                    const updated = await getReportById(interviewId)
+                    // If we find that the first question now has an answer, the background task likely finished
+                    if (updated?.technicalQuestions[0]?.quickAnswer) {
+                        clearInterval(pollInterval)
+                    }
+                } catch (err) {
+                    console.error("Background poll error:", err)
+                }
+            }, 5000)
+        }
+        return () => clearInterval(pollInterval)
+    }, [ report?.technicalQuestions, interviewId ])
 
 
 

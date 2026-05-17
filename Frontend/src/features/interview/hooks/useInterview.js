@@ -96,6 +96,6 @@ const getReports = async () => {
     }
 }, [interviewId])
 
-    return { loading, report, reports, generateReport, getReportById, getReports, getResumePdf }
+    return { loading, report, reports, generateReport, getReportById, getReports, getResumePdf, setReport }
 
 }
