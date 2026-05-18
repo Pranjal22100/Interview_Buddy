@@ -29,6 +29,9 @@ It accepts candidate input (`selfDescription`, `jobDescription`, optional resume
 ## Why the project is useful
 
 - AI-backed interview prep based on real candidate data.
+- Detailed Question Cards**: Structured guidance including Quick Answers, Detailed Explanations, Workflow Diagrams, Jargons, Code Snippets, Advantages, Limitations, and Best Practices.
+- Interactive AI Tutor Chat**: Conversational interface for requesting specific questions with a built-in topic refinement loop.
+- Resilient Generation**: Multi-step background processing and auto-polling to handle long AI tasks without timeouts.
 - Stores historic reports, so users can track improvements.
 - Includes both technical and behavioral question guidance, skill gaps, and a day-by-day plan.
 - Generates PDF resumes with Puppeteer from AI-crafted HTML.
@@ -118,10 +121,11 @@ npm run dev
 
 ### Interview
 
-- `POST /api/interview/` - Generate new interview report (protected). Accepts `selfDescription`, `jobDescription`, optional `resume` (PDF file).
+- `POST /api/interview/` - Generate new interview report (protected). Accepts `selfDescription`, `jobDescription`, optional `resume` (PDF file). Now uses background generation for resilience.
 - `GET /api/interview/report/:interviewId` - Get report by ID (protected).
 - `GET /api/interview/` - List authenticated user reports (protected).
 - `POST /api/interview/resume/pdf/:interviewReportId` - Generate resume PDF from report (protected).
+- `POST /api/interview/chat/:interviewId` - Interactive AI Tutor Chat for topic refinement and question generation.
 
 ## Usage examples
 
