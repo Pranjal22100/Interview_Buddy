@@ -9,6 +9,8 @@
 - [What the project does](#what-the-project-does)
 - [Why the project is useful](#why-the-project-is-useful)
 - [Architecture](#architecture)
+- [Architecture / Flow](#architecture--flow)
+- [Database Schema](#database-schema)
 - [Getting started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Backend setup](#backend-setup)
@@ -30,7 +32,7 @@ It accepts candidate input (`selfDescription`, `jobDescription`, optional resume
 
 - AI-backed interview prep based on real candidate data.
 - Detailed Question Cards**: Structured guidance including Quick Answers, Detailed Explanations, Workflow Diagrams, Jargons, Code Snippets, Advantages, Limitations, and Best Practices.
-- Interactive AI Tutor Chat**: Conversational interface for requesting specific questions with a built-in topic refinement loop.
+- Interactive AI Tutor Chat**: Conversational interview tutor after report generation. The tutor uses stored report context and chat history to generate fully structured question objects and topic-specific follow-up guidance.
 - Resilient Generation**: Multi-step background processing and auto-polling to handle long AI tasks without timeouts.
 - Stores historic reports, so users can track improvements.
 - Includes both technical and behavioral question guidance, skill gaps, and a day-by-day plan.
@@ -51,6 +53,34 @@ It accepts candidate input (`selfDescription`, `jobDescription`, optional resume
   - Auth flows in `src/features/auth`
   - Interview flows in `src/features/interview`
   - API abstraction via Axios with cookie-based session support
+
+## Architecture / Flow
+
+After a report is generated, the user can enter the AI Tutor chat mode from the report detail screen. In this mode, the app fetches the stored `InterviewReport` document and sends the report context so every chat message is grounded in the original job description, resume, and prior chat history.
+
+The AI Tutor does not respond with plain text alone. It returns a fully structured question object that includes fields such as:
+
+- `quickAnswer`
+- `detailedExplanation`
+- `codeSnippet`
+- `jargons`
+- `followUpQuestions`
+- `advantages`, `limitations`, and other question card details
+
+Each user message and assistant response is appended to the same `chatHistory` array inside the `InterviewReport` document. The AI-generated structured question object is also pushed to `chatQuestions` in the same document. There is no separate chat collection for this conversation state.
+
+![Interview Buddy Sequence Diagram](docs/ib_sequence.png)
+
+![Interview Buddy Activity Diagram](docs/ib_activity.png)
+
+## Database Schema
+
+The interview report is stored as a single `InterviewReport` MongoDB document. This document embeds both the report data and the tutoring conversation data.
+
+- `chatHistory` is an embedded subdocument array that stores objects like `{ role: "user" | "assistant", content, timestamp }`.
+- `chatQuestions` is also embedded inside the same `InterviewReport` document and reuses the same `technicalQuestionSchema` shape used for technical question cards.
+
+![Interview Buddy ER Diagram](docs/ib_er.png)
 
 ## Getting started
 
@@ -125,7 +155,7 @@ npm run dev
 - `GET /api/interview/report/:interviewId` - Get report by ID (protected).
 - `GET /api/interview/` - List authenticated user reports (protected).
 - `POST /api/interview/resume/pdf/:interviewReportId` - Generate resume PDF from report (protected).
-- `POST /api/interview/chat/:interviewId` - Interactive AI Tutor Chat for topic refinement and question generation.
+- `POST /api/interview/chat/:interviewId` - Interactive AI Tutor Chat for topic refinement and question generation. This endpoint uses the stored `InterviewReport` context and appends both user/assistant exchanges to `chatHistory`, while pushing AI-generated structured questions into `chatQuestions` inside the same report document.
 
 ## Usage examples
 
